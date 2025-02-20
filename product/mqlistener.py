@@ -1,5 +1,5 @@
 from rabbitmq import consume_message, publish_message
-from sqlalchemy.orm import Session
+import threading
 import models, database
 
 QUEUE_UPDATE = "order.update"
@@ -31,8 +31,13 @@ def update_stock(data):
     
     db.close()
 
-
 def start_listener():
-    consume_message(QUEUE_START, check_stock)
-    consume_message(QUEUE_UPDATE, update_stock)
+    thread1 = threading.Thread(target=consume_message, args=(QUEUE_START, check_stock))
+    thread2 = threading.Thread(target=consume_message, args=(QUEUE_UPDATE, update_stock))
+
+    thread1.start()
+    thread2.start()
+
+    thread1.join()
+    thread2.join()
 

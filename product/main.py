@@ -10,8 +10,7 @@ app = FastAPI()
 
 @app.on_event("startup")
 def startup_event():
-    listener_thread = threading.Thread(target=start_listener, daemon=True)
-    listener_thread.start()
+    start_listener()
     
 models.Base.metadata.create_all(bind=engine)
 
