@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres
-    container_name: postgres_db
+    container_name: postgresql
     environment:
       POSTGRES_USER: use
       POSTGRES_PASSWORD: pwd
@@ -19,6 +19,9 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
       
 volumes:
   pgdata:

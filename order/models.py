@@ -5,5 +5,7 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    product_name = Column(String, index=True)
-    quantity = Column(Integer, nullable=False)
+    product_id = Column(Integer, index=True, nullable=False)
+    quantity = Column(Integer, index=True, nullable=False)
+    owner_id = Column(Integer, index=True,nullable=False)
+    status = Column(String, index=True, nullable=False) # PROCESSING or FAILED or SUCCESS

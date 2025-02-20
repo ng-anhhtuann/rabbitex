@@ -1,2 +1,3 @@
-alembic revision --autogenerate -m "Initial migration"
-alembic upgrade head
+user : 8000
+product : 8001
+order : 8002
