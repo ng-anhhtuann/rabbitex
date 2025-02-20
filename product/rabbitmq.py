@@ -27,10 +27,6 @@ def consume_message(queue_name, callback):
     channel.queue_declare(queue=queue_name, durable=True)
     
     channel.basic_consume(queue=queue_name, on_message_callback=on_message)
-    print(f" [*] Listening for messages on {queue_name}. To exit, press CTRL+C")
     
-    try:
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        print(f" [!] Stopped listening to {queue_name}")
-        connection.close()
+    channel.start_consuming()
+    connection.close()
