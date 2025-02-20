@@ -4,6 +4,7 @@ import models, database
 
 QUEUE_UPDATE = "order.update"
 QUEUE_START = "order.created"
+QUEUE_PROCESS = "user.payment"
 
 def check_stock(data):
     db = database.SessionLocal()
@@ -11,11 +12,11 @@ def check_stock(data):
     print("CHECK AVAILABLE STOCK")
     print(data)
     if not product or product.stock < data["quantity"]:
-        publish_message("order.update", {"order_id": data["order_id"], "status": "FAILED"})
+        publish_message(QUEUE_UPDATE, {"order_id": data["order_id"], "status": "FAILED"})
     else:
         total_price = product.price * data["quantity"]
         data["amount"] = total_price
-        publish_message("user.payment", data)  
+        publish_message(QUEUE_PROCESS, data)  
     
     db.close()
 
