@@ -24,11 +24,12 @@ def update_stock(data):
     db = database.SessionLocal()    
     print("UPDATE STOCK DEDUCTION")
     print(data)
-    product = db.query(models.Product).filter(models.Product.id == data["product_id"]).first()
+    if (data["status"] == "SUCCESS"):
+        product = db.query(models.Product).filter(models.Product.id == data["product_id"]).first()
 
-    if product:
-        product.stock -= data["quantity"]
-        db.commit()
+        if product:
+            product.stock -= data["quantity"]
+            db.commit()
     
     db.close()
 
