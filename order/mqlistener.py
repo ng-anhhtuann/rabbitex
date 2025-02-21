@@ -1,7 +1,8 @@
 from rabbitmq import consume_message
-from sqlalchemy.orm import Session
 import models, database
+import threading
 
+QUEUE_UPDATE = "order.update"
 def update_order_status(data):
     db = database.SessionLocal()
     order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
@@ -13,4 +14,9 @@ def update_order_status(data):
 
 
 def start_listener():
-    consume_message("order.update", update_order_status)
+    # consume_message("order.update", update_order_status)
+    thread = threading.Thread(target=consume_message, args=(QUEUE_UPDATE, update_order_status), daemon=True)
+    
+    thread.start()
+    
+    # thread.join()

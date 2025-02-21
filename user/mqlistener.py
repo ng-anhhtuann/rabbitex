@@ -1,6 +1,6 @@
 from rabbitmq import consume_message, publish_message
-from sqlalchemy.orm import Session
 import models, database
+import threading
 
 QUEUE_UPDATE = "order.update"
 QUEUE_PROCESS = "user.payment"
@@ -30,4 +30,9 @@ def process_payment(data):
     db.close()
     
 def start_listener():
-    consume_message(QUEUE_PROCESS, process_payment)
+    # consume_message(QUEUE_PROCESS, process_payment)
+    thread = threading.Thread(target=consume_message, args=(QUEUE_PROCESS, process_payment), daemon=True)
+    
+    thread.start()
+    
+    # thread.join()
