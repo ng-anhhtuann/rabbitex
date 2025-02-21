@@ -1,0 +1,6 @@
+user/venv
+user/__pycache__
+product/venv
+product/__pycache__
+order/venv
+order/__pycache__
