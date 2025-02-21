@@ -17,16 +17,14 @@ def publish_message(queue_name, message):
     connection.close()
 
 def consume_message(queue_name, callback):
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
+    channel = connection.channel()
+    channel.queue_declare(queue=queue_name, durable=True)
+    
     def on_message(ch, method, properties, body):
         data = json.loads(body)
         callback(data)
         ch.basic_ack(delivery_tag=method.delivery_tag)
     
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
-    channel = connection.channel()
-    channel.queue_declare(queue=queue_name, durable=True)
-    
     channel.basic_consume(queue=queue_name, on_message_callback=on_message)
-    
     channel.start_consuming()
-    connection.close()
