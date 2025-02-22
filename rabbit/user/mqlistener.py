@@ -1,15 +1,16 @@
-from rabbitmq import consume_message, publish_message
+from rabbitmq import consume_queues, publish_default
 import models, database
 import threading
 
 QUEUE_UPDATE = "order.update"
-QUEUE_PROCESS = "user.payment"
+QUEUE_PROCESS = "payment.process"
 
 def process_payment(data):
-    db = database.SessionLocal()
-    user = db.query(models.User).filter(models.User.id == data["owner_id"]).first()
     print("CHECK INSUFFICIENT BALANCE")
     print(data)
+    db = database.SessionLocal()
+    user = db.query(models.User).filter(models.User.id == data["owner_id"]).first()
+
     message = {
         "order_id": data["order_id"],
         "product_id": data.get("product_id"),  
@@ -25,14 +26,18 @@ def process_payment(data):
         message["status"] = "SUCCESS"
         message["product_id"] = data["product_id"]
         
-    publish_message(QUEUE_UPDATE, message)  
+    publish_default(QUEUE_UPDATE, message)  
     
     db.close()
     
 def start_listener():
-    # consume_message(QUEUE_PROCESS, process_payment)
-    thread = threading.Thread(target=consume_message, args=(QUEUE_PROCESS, process_payment), daemon=True)
+    # consume_queues(QUEUE_PROCESS, process_payment)
     
-    thread.start()
-    
+    # thread = threading.Thread(target=consume_queues, args=(QUEUE_PROCESS, process_payment), daemon=True)
+    # thread.start()    
     # thread.join()
+    
+    queue_callbacks = {
+        QUEUE_PROCESS: process_payment,
+    }
+    consume_queues(queue_callbacks.keys(), queue_callbacks)

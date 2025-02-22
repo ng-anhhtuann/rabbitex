@@ -12,11 +12,11 @@ consumer = Consumer({
     "auto.offset.reset": "earliest"
 })
 
-def publish_message(topic, message):
+def publish_default(topic, message):
     producer.produce(topic, key="key", value=json.dumps(message))
     producer.flush()
 
-def consume_message(topic, callback):
+def consume_queues(topic, callback):
     consumer.subscribe([topic])
 
     while True:

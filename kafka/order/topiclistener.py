@@ -1,8 +1,8 @@
-from kafkonfig import consume_message
+from kafkonfig import consume_queues
 import models, database
 import threading
 
-TOPICUPDATE = "order.update"
+TOPICUPDATE = "ORDER_UPDATE"
 def update_order_status(data):
     db = database.SessionLocal()
     order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
@@ -14,8 +14,8 @@ def update_order_status(data):
 
 
 def start_listener():
-    # consume_message("order.update", update_order_status)
-    thread = threading.Thread(target=consume_message, args=(TOPICUPDATE, update_order_status), daemon=True)
+    # consume_queues("ORDER_UPDATE", update_order_status)
+    thread = threading.Thread(target=consume_queues, args=(TOPICUPDATE, update_order_status), daemon=True)
     
     thread.start()
     

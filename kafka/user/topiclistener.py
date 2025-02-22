@@ -1,9 +1,9 @@
-from kafkonfig import consume_message, publish_message
+from kafkonfig import consume_queues, publish_default
 import models, database
 import threading
 
-TOPICUPDATE = "order.update"
-TOPIC_PROCESS = "user.payment"
+TOPICUPDATE = "ORDER_UPDATE"
+TOPIC_PROCESS = "PAYMENT_PROCESS"
 
 def process_payment(data):
     db = database.SessionLocal()
@@ -25,13 +25,13 @@ def process_payment(data):
         message["status"] = "SUCCESS"
         message["product_id"] = data["product_id"]
         
-    publish_message(TOPICUPDATE, message)  
+    publish_default(TOPICUPDATE, message)  
     
     db.close()
     
 def start_listener():
-    # consume_message(TOPIC_PROCESS, process_payment)
-    thread = threading.Thread(target=consume_message, args=(TOPIC_PROCESS, process_payment), daemon=True)
+    # consume_queues(TOPIC_PROCESS, process_payment)
+    thread = threading.Thread(target=consume_queues, args=(TOPIC_PROCESS, process_payment), daemon=True)
     
     thread.start()
     
