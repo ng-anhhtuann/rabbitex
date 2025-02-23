@@ -1,33 +1,34 @@
-from confluent_kafka import Producer, Consumer
+from kafka import KafkaProducer, KafkaConsumer
 import json
 
 KAFKA_BROKER = "localhost:9092"
-KAFKA_GROUP_ID = "partition1"
+# EACH CONSUMER INDEPENDENTLY RECEIVE THE SAME DATA
+# SAME GROUP -> LOAD BALANCING
+# NOT SAME -> SIMPLE PUB/SUB
+CONSUME_GROUP = "DEMO_USER"
+UTF8 = "utf-8"
 
-producer = Producer({"bootstrap.servers": KAFKA_BROKER})
+producer = KafkaProducer(
+    bootstrap_servers=KAFKA_BROKER,
+    value_serializer=lambda v: json.dumps(v).encode(UTF8),
+)
 
-consumer = Consumer({
-    "bootstrap.servers": KAFKA_BROKER,
-    "group.id": KAFKA_GROUP_ID,
-    "auto.offset.reset": "earliest"
-})
-
-def publish_default(topic, message):
-    producer.produce(topic, key="key", value=json.dumps(message))
+def publish_kafka(topic, message):
+    producer.send(topic, value=message)
     producer.flush()
 
-def consume_queues(topic, callback):
-    consumer.subscribe([topic])
+def consume_kafka(topics, callback_map):
+    consumer = KafkaConsumer(
+        *topics,
+        bootstrap_servers=KAFKA_BROKER,
+        auto_offset_reset="earliest",
+        value_deserializer=lambda v: json.loads(v.decode(UTF8)),
+        group_id=CONSUME_GROUP, 
+    )
 
-    while True:
-        msg = consumer.poll(1.0)
-        if msg is None:
-            continue
-        if msg.error():
-            print(f"====================Error: {msg.error()}")
-            continue
+    for message in consumer:
+        topic = message.topic
+        data = message.value
 
-        data = json.loads(msg.value().decode("utf-8"))
-        callback(data)
-
-        consumer.commit()
+        if topic in callback_map:
+            callback_map[topic](data)

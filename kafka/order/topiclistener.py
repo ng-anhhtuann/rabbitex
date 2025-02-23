@@ -1,22 +1,25 @@
-from kafkonfig import consume_queues
+from kafkonfig import consume_kafka
 import models, database
 import threading
 
-TOPICUPDATE = "ORDER_UPDATE"
+TOPIC_ORDER_UPDATE = "order.update"
+
 def update_order_status(data):
-    db = database.SessionLocal()
-    order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
+    print("===== UPDATE ORDER STATUS")
     print(data)
+    db = database.SessionLocal()
+    
+    order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
+
     if order:
         order.status = data["status"]
         db.commit()
     db.close()
 
+import threading
 
 def start_listener():
-    # consume_queues("ORDER_UPDATE", update_order_status)
-    thread = threading.Thread(target=consume_queues, args=(TOPICUPDATE, update_order_status), daemon=True)
-    
-    thread.start()
-    
-    # thread.join()
+    queue_callbacks = {
+        TOPIC_ORDER_UPDATE: update_order_status
+    }
+    consume_kafka(queue_callbacks.keys(), queue_callbacks)

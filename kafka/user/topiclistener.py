@@ -1,15 +1,16 @@
-from kafkonfig import consume_queues, publish_default
+from kafkonfig import consume_kafka, publish_kafka
 import models, database
 import threading
 
-TOPICUPDATE = "ORDER_UPDATE"
-TOPIC_PROCESS = "PAYMENT_PROCESS"
+TOPIC_ORDER_UPDATE = "order.update"
+TOPIC_PAYMENT_PROCESS = "payment.process"
 
 def process_payment(data):
+    print("===== CHECK INSUFFICIENT BALANCE")
+    print(data)
     db = database.SessionLocal()
     user = db.query(models.User).filter(models.User.id == data["owner_id"]).first()
-    print("CHECK INSUFFICIENT BALANCE")
-    print(data)
+
     message = {
         "order_id": data["order_id"],
         "product_id": data.get("product_id"),  
@@ -25,14 +26,12 @@ def process_payment(data):
         message["status"] = "SUCCESS"
         message["product_id"] = data["product_id"]
         
-    publish_default(TOPICUPDATE, message)  
+    publish_kafka(TOPIC_ORDER_UPDATE, message)  
     
     db.close()
     
 def start_listener():
-    # consume_queues(TOPIC_PROCESS, process_payment)
-    thread = threading.Thread(target=consume_queues, args=(TOPIC_PROCESS, process_payment), daemon=True)
-    
-    thread.start()
-    
-    # thread.join()
+    queue_callbacks = {
+        TOPIC_PAYMENT_PROCESS: process_payment
+    }
+    consume_kafka(queue_callbacks.keys(), queue_callbacks)

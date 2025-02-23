@@ -10,12 +10,11 @@ def update_order_status(data):
     print(data)
     db = database.SessionLocal()
     
-    if (data["status"] == "SUCCESS"):
-        order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
+    order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
 
-        if order:
-            order.status = data["status"]
-            db.commit()
+    if order:
+        order.status = data["status"]
+        db.commit()
     db.close()
 
 import threading

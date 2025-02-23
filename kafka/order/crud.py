@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 import models, schemas
-from kafkonfig import publish_default
+from kafkonfig import publish_kafka
 
 def get_orders(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.Order).offset(skip).limit(limit).all()
@@ -23,7 +23,7 @@ def create_order(db: Session, order: schemas.OrderCreate):
         "quantity": order.quantity,
         "owner_id": order.owner_id
     }
-    publish_default("ORDER_CREATE", message)
+    publish_kafka("order.create", message)
     
     return db_order
 
