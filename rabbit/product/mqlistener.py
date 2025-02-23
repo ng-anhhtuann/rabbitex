@@ -5,6 +5,7 @@ import threading
 QUEUE_UPDATE = "order.update"
 QUEUE_START = "order.create"
 QUEUE_PROCESS = "payment.process"
+QUEUE_UPDATE_SUCCESS = "order.update.success"
 
 def check_stock(data):    
     print("CHECK AVAILABLE STOCK")
@@ -31,6 +32,8 @@ def update_stock(data):
         if product:
             product.stock -= data["quantity"]
             db.commit()
+        
+        publish_default(QUEUE_UPDATE_SUCCESS, data)  
     
     db.close()
 

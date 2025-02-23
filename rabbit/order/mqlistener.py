@@ -3,16 +3,19 @@ import models, database
 import threading
 
 QUEUE_UPDATE = "order.update"
+QUEUE_UPDATE_SUCCESS = "order.update.success"
 
 def update_order_status(data):
     print("UPDATE ORDER STATUS")
     print(data)
     db = database.SessionLocal()
-    order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
     
-    if order:
-        order.status = data["status"]
-        db.commit()
+    if (data["status"] == "SUCCESS"):
+        order = db.query(models.Order).filter(models.Order.id == data["order_id"]).first()
+
+        if order:
+            order.status = data["status"]
+            db.commit()
     db.close()
 
 import threading
@@ -25,6 +28,6 @@ def start_listener():
     # thread.join()
     
     queue_callbacks = {
-        QUEUE_UPDATE: update_order_status
+        QUEUE_UPDATE_SUCCESS: update_order_status
     }
     consume_queues(queue_callbacks.keys(), queue_callbacks)
