@@ -1,11 +1,14 @@
-from rabbitmq import consume_queues, publish_default
+from rabbitmq import consume_queues, publish_default, publish_fanout, consume_fanout
 import models, database
-import threading
 
-QUEUE_UPDATE = "order.update"
-QUEUE_START = "order.create"
-QUEUE_PROCESS = "payment.process"
-QUEUE_UPDATE_SUCCESS = "order.update.success"
+# QUEUE_UPDATE = "order.update"
+# QUEUE_START = "order.create"
+# QUEUE_PROCESS = "payment.process"
+# QUEUE_UPDATE_SUCCESS = "order.update.success"
+
+EXCHANGE_ORDER = "EX_ORDER"
+EXCHANGE_PRODUCT = "EX_PRODUCT"
+EXCHANGE_USER = "EX_USER"
 
 def check_stock(data):    
     print("CHECK AVAILABLE STOCK")
@@ -14,11 +17,13 @@ def check_stock(data):
     product = db.query(models.Product).filter(models.Product.id == data["product_id"]).first()
 
     if not product or product.stock < data["quantity"]:
-        publish_default(QUEUE_UPDATE, {"order_id": data["order_id"], "status": "FAILED"})
+        # publish_default(QUEUE_UPDATE, {"order_id": data["order_id"], "status": "FAILED"})
+        publish_fanout(EXCHANGE_USER, {"order_id": data["order_id"], "status": "FAILED"})
     else:
         total_price = product.price * data["quantity"]
         data["amount"] = total_price
-        publish_default(QUEUE_PROCESS, data)  
+        # publish_default(QUEUE_PROCESS, data)  
+        publish_fanout(EXCHANGE_PRODUCT, data)  
     
     db.close()
 
@@ -32,26 +37,21 @@ def update_stock(data):
         if product:
             product.stock -= data["quantity"]
             db.commit()
-        
-        publish_default(QUEUE_UPDATE_SUCCESS, data)  
     
+        # publish_default(QUEUE_UPDATE_SUCCESS, data)  
     db.close()
-
+    
 def start_listener():
-    # consume_queues(QUEUE_START, check_stock)
-    # consume_queues(QUEUE_UPDATE, update_stock)
+    # Default
+    # queue_callbacks = {
+    #     QUEUE_START: check_stock,
+    #     QUEUE_UPDATE: update_stock
+    # }
+    # consume_queues(queue_callbacks.keys(), queue_callbacks)
     
-    # thread1 = threading.Thread(target=consume_queues, args=(QUEUE_START, check_stock), daemon=True)
-    # thread2 = threading.Thread(target=consume_queues, args=(QUEUE_UPDATE, update_stock), daemon=True)
-    # thread1.start()
-    # thread2.start()
-    # thread1.join()
-    # thread2.join()
-    
-    queue_callbacks = {
-        QUEUE_START: check_stock,
-        QUEUE_UPDATE: update_stock
+    # Fanout
+    exchange_callbacks = {
+        EXCHANGE_ORDER: check_stock,
+        EXCHANGE_USER: update_stock
     }
-    consume_queues(queue_callbacks.keys(), queue_callbacks)
-
-
+    consume_fanout(exchange_callbacks)

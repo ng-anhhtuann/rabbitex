@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 import models, schemas
-from rabbitmq import publish_default
+from rabbitmq import publish_default, publish_fanout
+
+EXCHANGE_ORDER = "EX_ORDER"
 
 def get_orders(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.Order).offset(skip).limit(limit).all()
@@ -24,9 +26,8 @@ def create_order(db: Session, order: schemas.OrderCreate):
         "owner_id": order.owner_id
     }
     
-    print("SEND DATA")
-    print(message)
-    publish_default("order.create", message)
+    # publish_default("order.create", message)
+    publish_fanout(EXCHANGE_ORDER, message)
     
     return db_order
 

@@ -1,9 +1,12 @@
-from rabbitmq import consume_queues
+from rabbitmq import consume_queues, consume_fanout
 import models, database
-import threading
 
-QUEUE_UPDATE = "order.update"
-QUEUE_UPDATE_SUCCESS = "order.update.success"
+# QUEUE_UPDATE = "order.update"
+# QUEUE_UPDATE_SUCCESS = "order.update.success"
+
+EXCHANGE_ORDER = "EX_ORDER"
+EXCHANGE_PRODUCT = "EX_PRODUCT"
+EXCHANGE_USER = "EX_USER"
 
 def update_order_status(data):
     print("UPDATE ORDER STATUS")
@@ -17,16 +20,14 @@ def update_order_status(data):
         db.commit()
     db.close()
 
-import threading
-
 def start_listener():
-    # consume_queues("ORDER_UPDATE", update_order_status)
+    # Default
+    # queue_callbacks = {
+    #     QUEUE_UPDATE: update_order_status
+    # }
+    # consume_queues(queue_callbacks.keys(), queue_callbacks)
     
-    # thread = threading.Thread(target=consume_queues, args=(QUEUE_UPDATE, update_order_status), daemon=True)
-    # thread.start()
-    # thread.join()
-    
-    queue_callbacks = {
-        QUEUE_UPDATE_SUCCESS: update_order_status
+    exchange_callbacks = {
+        EXCHANGE_USER: update_order_status
     }
-    consume_queues(queue_callbacks.keys(), queue_callbacks)
+    consume_fanout(exchange_callbacks)
