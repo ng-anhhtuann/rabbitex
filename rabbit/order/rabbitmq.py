@@ -33,7 +33,7 @@ def publish_fanout(exchange_name, message):
     channel.basic_publish(exchange=exchange_name, routing_key="", body=json.dumps(message))
     connection.close()
 
-def publish_headers(headers, message):
+def publish_rpc(headers, message):
     connection, channel = get_channel()
     channel.exchange_declare(exchange=EXCHANGE, exchange_type=ExchangeType.headers, durable=True)
     properties = pika.BasicProperties(headers=headers)
