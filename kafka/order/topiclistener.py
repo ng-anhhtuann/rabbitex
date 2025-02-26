@@ -2,7 +2,7 @@ from kafkonfig import consume_kafka
 import models, database
 import threading
 
-TOPIC_ORDER_UPDATE = "order.update"
+TOPIC_ORDER_STATUS = "ORDER_CHECK"
 
 def update_order_status(data):
     print("===== UPDATE ORDER STATUS")
@@ -20,6 +20,6 @@ import threading
 
 def start_listener():
     queue_callbacks = {
-        TOPIC_ORDER_UPDATE: update_order_status
+        TOPIC_ORDER_STATUS: update_order_status
     }
     consume_kafka(queue_callbacks.keys(), queue_callbacks)

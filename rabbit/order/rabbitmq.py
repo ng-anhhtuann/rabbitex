@@ -40,7 +40,7 @@ def publish_headers(headers, message):
     channel.basic_publish(exchange=EXCHANGE, routing_key="", body=json.dumps(message), properties=properties)
     connection.close()
 
-def consume_queues(queue_names, callback_map):
+def consume_default(queue_names, callback_map):
     connection, channel = get_channel()
 
     def on_message(ch, method, properties, body):
@@ -63,8 +63,10 @@ def consume_fanout(exchange_callback_map):
     
     for exchange_name, callback in exchange_callback_map.items():
         channel.exchange_declare(exchange=exchange_name, exchange_type=ExchangeType.fanout, durable=True)
+        
         result = channel.queue_declare(queue="", durable=True)
         queue_name = result.method.queue
+        
         channel.queue_bind(exchange=exchange_name, queue=queue_name)
         
         def on_message(ch, method, properties, body, callback=callback):
@@ -76,6 +78,29 @@ def consume_fanout(exchange_callback_map):
             queue=queue_name,
             on_message_callback=on_message,
             auto_ack=False
+        )
+    
+    channel.start_consuming()
+    
+def consume_topic(routing_callback_map):
+    connection, channel = get_channel()
+    channel.exchange_declare(exchange=EXCHANGE, exchange_type=ExchangeType.topic, durable=True)
+    
+    result = channel.queue_declare(queue='', exclusive=True)
+    queue_name = result.method.queue
+    
+    for routing_key, callback in routing_callback_map.items():
+        channel.queue_bind(exchange=EXCHANGE, queue=queue_name, routing_key=routing_key)
+        
+        def on_message(ch, method, properties, body, callback=callback):
+            data = json.loads(body)
+            callback(data)
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+        
+        channel.basic_consume(
+            queue=queue_name,
+            on_message_callback=on_message,
+            auto_ack=True
         )
     
     channel.start_consuming()

@@ -23,7 +23,7 @@ def create_order(db: Session, order: schemas.OrderCreate):
         "quantity": order.quantity,
         "owner_id": order.owner_id
     }
-    publish_kafka("order.create", message)
+    publish_kafka("STOCK_CHECK", message)
     
     return db_order
 

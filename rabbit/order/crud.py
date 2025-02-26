@@ -1,8 +1,15 @@
 from sqlalchemy.orm import Session
 import models, schemas
-from rabbitmq import publish_default, publish_fanout
+from rabbitmq import publish_default, publish_fanout, publish_topic
 
-EXCHANGE_ORDER = "EX_ORDER"
+# @Default
+# QUEUE_UPDATE = "order.create"
+
+# @Fanout
+# EXCHANGE_ORDER = "EX_ORDER"
+
+# @Topic
+TOPIC_ORDER = "order.create.#"
 
 def get_orders(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.Order).offset(skip).limit(limit).all()
@@ -26,8 +33,9 @@ def create_order(db: Session, order: schemas.OrderCreate):
         "owner_id": order.owner_id
     }
     
-    # publish_default("order.create", message)
-    publish_fanout(EXCHANGE_ORDER, message)
+    # publish_default(QUEUE_UPDATE, message)
+    # publish_fanout(EXCHANGE_ORDER, message)
+    publish_topic(TOPIC_ORDER, message)
     
     return db_order
 

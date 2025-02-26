@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: pwd
       POSTGRES_DB: rabbit
     ports:
-      - "5555:5432"
+      - "5454:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
