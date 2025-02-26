@@ -1,4 +1,4 @@
-from rabbitmq import consume_default, consume_fanout, consume_topic
+from rabbitmq import consume_default, consume_fanout, consume_topic, consume_rpc
 import models, database
 
 # @Default
@@ -8,7 +8,11 @@ import models, database
 # @Fanout
 # EXCHANGE_USER = "EX_USER"
 
-TOPIC_UPDATE = "update.status"
+# @Topic
+# TOPIC_UPDATE = "update.status"
+
+# @RPC
+QUEUE_ORDER_STATUS_UPDATE = "order_status_update"
 
 def update_order_status(data):
     print("UPDATE ORDER STATUS")
@@ -20,7 +24,23 @@ def update_order_status(data):
     if order:
         order.status = data["status"]
         db.commit()
+        
+        # @RPC
+        db.refresh(order)
+
+        order_data = {
+            "id": data["order_id"],
+            "owner_id": order.owner_id,
+            "product_id": order.product_id,
+            "quantity": order.quantity,
+            "status": order.status
+        }
+    else:
+        order_data = data
+        # End @RPC
     db.close()
+    
+    return order_data
 
 def start_listener():
     # Default
@@ -29,12 +49,20 @@ def start_listener():
     # }
     # consume_default(queue_callbacks.keys(), queue_callbacks)
     
+    # Fanout
     # exchange_callbacks = {
     #     EXCHANGE_USER: update_order_status
     # }
     # consume_fanout(exchange_callbacks)
     
-    topic_callbacks = {
-        TOPIC_UPDATE: update_order_status
+    # Topic
+    # topic_callbacks = {
+    #     TOPIC_UPDATE: update_order_status
+    # }
+    # consume_topic(topic_callbacks)
+    
+    # Rpc
+    rpc_callbacks = {
+        QUEUE_ORDER_STATUS_UPDATE: update_order_status
     }
-    consume_topic(topic_callbacks)
+    consume_rpc(rpc_callbacks)

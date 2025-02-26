@@ -34,9 +34,8 @@ def publish_fanout(exchange_name, message):
     channel.basic_publish(exchange=exchange_name, routing_key="", body=json.dumps(message))
     connection.close()
 
-def publish_rpc(headers, message):
+def publish_rpc(queue_name, message):
     connection, channel = get_channel()
-    channel.exchange_declare(exchange=EXCHANGE, exchange_type=pika.exchange_type.ExchangeType.headers, durable=True)
 
     result = channel.queue_declare(queue="", exclusive=True)
     callback_queue = result.method.queue
@@ -49,18 +48,16 @@ def publish_rpc(headers, message):
         if properties.correlation_id == correlation_id:
             response = json.loads(body)
             ch.stop_consuming() 
-            
+
     channel.basic_consume(queue=callback_queue, on_message_callback=on_response, auto_ack=True)
 
     properties = pika.BasicProperties(
-        headers=headers,
-        reply_to=callback_queue,
+        reply_to=callback_queue,  
         correlation_id=correlation_id
     )
 
-    channel.basic_publish(exchange=EXCHANGE, routing_key="", body=json.dumps(message), properties=properties)
-
-    channel.start_consuming() 
+    channel.basic_publish(exchange="", routing_key=queue_name, body=json.dumps(message), properties=properties)
+    channel.start_consuming()
 
     connection.close()
     return response 
@@ -133,27 +130,26 @@ def consume_topic(routing_callback_map):
 def consume_rpc(callback_map):
     connection, channel = get_channel()
 
-    channel.exchange_declare(exchange=EXCHANGE, exchange_type=pika.exchange_type.ExchangeType.headers, durable=True)
-
-    queue_name = channel.queue_declare(queue="", exclusive=True).method.queue
-
-    for routing_key, callback in callback_map.items():
-        channel.queue_bind(exchange=EXCHANGE, queue=queue_name, arguments={"routing_key": routing_key})
+    for queue_name in callback_map.keys():
+        channel.queue_declare(queue=queue_name, durable=True)
 
     def on_request(ch, method, properties, body):
-        headers = properties.headers
-        routing_key = headers.get("routing_key")
+        queue_name = method.routing_key
+        data = json.loads(body)
 
-        if routing_key in callback_map:
-            response = callback_map[routing_key](json.loads(body))
+        if queue_name in callback_map:
+            response = callback_map[queue_name](data)  
 
-        ch.basic_publish(
-            exchange="",
-            routing_key=properties.reply_to,
-            properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-            body=json.dumps(response)
-        )
+            ch.basic_publish(
+                exchange="",
+                routing_key=properties.reply_to,  
+                properties=pika.BasicProperties(correlation_id=properties.correlation_id),
+                body=json.dumps(response)
+            )
+
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    channel.basic_consume(queue=queue_name, on_message_callback=on_request, auto_ack=False)
+    for queue_name in callback_map.keys():
+        channel.basic_consume(queue=queue_name, on_message_callback=on_request)
+
     channel.start_consuming()

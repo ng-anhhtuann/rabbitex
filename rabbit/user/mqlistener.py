@@ -1,4 +1,4 @@
-from rabbitmq import consume_default, publish_default, publish_fanout, consume_fanout, consume_topic, publish_topic
+from rabbitmq import consume_default, publish_default, publish_fanout, consume_fanout, consume_topic, publish_topic, consume_rpc
 import models, database
 
 # @Default
@@ -11,8 +11,11 @@ import models, database
 # EXCHANGE_USER = "EX_USER"
 
 # @Topic
-TOPIC_USER = "user.check"
-TOPIC_UPDATE = "update.*"
+# TOPIC_USER = "user.check"
+# TOPIC_UPDATE = "update.*"
+
+# @RPC
+QUEUE_BALANCE = "user_check"
 
 def process_payment(data):
     print("CHECK INSUFFICIENT BALANCE")
@@ -37,9 +40,12 @@ def process_payment(data):
         
     # publish_default(QUEUE_UPDATE, message)
     # publish_fanout(EXCHANGE_USER, message)  
-    publish_topic(TOPIC_UPDATE, message)  
+    # publish_topic(TOPIC_UPDATE, message)  
     
     db.close()
+    
+    # @RPC
+    return message
     
 def start_listener():
     # Default
@@ -53,7 +59,15 @@ def start_listener():
     #     EXCHANGE_PRODUCT: process_payment
     # }
     # consume_fanout(exchange_callbacks)
-    topic_callbacks = {
-        TOPIC_USER: process_payment
+    
+    # Topic
+    # topic_callbacks = {
+    #     TOPIC_USER: process_payment
+    # }
+    # consume_topic(topic_callbacks)
+    
+    # RPC
+    rpc_callbacks = {
+        QUEUE_BALANCE: process_payment
     }
-    consume_topic(topic_callbacks)
+    consume_rpc(rpc_callbacks)
