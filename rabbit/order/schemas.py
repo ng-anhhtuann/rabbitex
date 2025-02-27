@@ -10,6 +10,7 @@ class OrderCreate(OrderBase):
 
 class OrderResponse(OrderBase):
     id: int
+    status: str
 
     class Config:
         orm_mode = True

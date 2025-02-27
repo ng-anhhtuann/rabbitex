@@ -1,5 +1,6 @@
 from rabbitmq import consume_default, publish_default, publish_fanout, consume_fanout, consume_topic, publish_topic, publish_rpc, consume_rpc
 import models, database
+import time
 
 # @Default
 # QUEUE_UPDATE = "order.update"
@@ -31,6 +32,8 @@ def check_stock(data):
     product = db.query(models.Product).filter(models.Product.id == data["product_id"]).first()
     response = None
     
+    # time.sleep(2)
+    
     if not product or product.stock < data["quantity"]:
         # publish_default(QUEUE_UPDATE, {"order_id": data["order_id"], "status": "FAILED"})
         # publish_fanout(EXCHANGE_USER, {"order_id": data["order_id"], "status": "FAILED"})
@@ -48,7 +51,7 @@ def check_stock(data):
         data["amount"] = total_price
         # publish_default(QUEUE_PROCESS, data)  
         # publish_fanout(EXCHANGE_PRODUCT, data)  
-        # publish_topic(QUEUE_BALANCE, data)  
+        # publish_topic(TOPIC_USER, data)  
         
         # @RPC
         response_balance = publish_rpc(QUEUE_BALANCE, data)

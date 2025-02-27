@@ -42,9 +42,16 @@ def create_order(db: Session, order: schemas.OrderCreate):
     # return db_order
     
     response = publish_rpc(QUEUE_CREATE, message)
-    
-    return response
+    print("DATA RESPONSE")
+    print(response)
 
+    return {
+        "id": db_order.id,
+        "product_id": db_order.product_id,
+        "owner_id": db_order.owner_id,
+        "quantity": db_order.quantity,
+        "status": response.get("status") 
+    }
 
 def delete_order(db: Session, order_id: int):
     db_order = db.query(models.Order).filter(models.Order.id == order_id).first()
