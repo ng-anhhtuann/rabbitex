@@ -34,7 +34,7 @@ def check_stock(data):
     
     # time.sleep(2)
     
-    if not product or product.stock < data["quantity"]:
+    if not product or product.stock < data["quantity"] or data["quantity"] <= 0:
         # publish_default(QUEUE_UPDATE, {"order_id": data["order_id"], "status": "FAILED"})
         # publish_fanout(EXCHANGE_USER, {"order_id": data["order_id"], "status": "FAILED"})
         # publish_topic(QUEUE_UPDATE, {"order_id": data["order_id"], "status": "FAILED"})

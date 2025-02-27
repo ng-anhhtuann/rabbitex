@@ -1,4 +1,4 @@
-from kafkonfig import consume_kafka, publish_kafka
+from kafkonfig import consume_kafka, publish_kafka, consume_kafka_rpc
 import models, database
 import threading
 
@@ -26,12 +26,17 @@ def process_payment(data):
         message["status"] = "SUCCESS"
         message["product_id"] = data["product_id"]
         
-    publish_kafka(TOPIC_ORDER_STATUS, message)  
+    # publish_kafka(TOPIC_ORDER_STATUS, message)  
     
     db.close()
+
+    # @RPC    
+    return message
     
 def start_listener():
-    queue_callbacks = {
-        TOPIC_BALANCE_CHECK: process_payment
-    }
-    consume_kafka(queue_callbacks.keys(), queue_callbacks)
+    # queue_callbacks = {
+    #     TOPIC_BALANCE_CHECK: process_payment
+    # }
+    # consume_kafka(queue_callbacks.keys(), queue_callbacks)
+    
+    consume_kafka_rpc(TOPIC_BALANCE_CHECK, process_payment)
