@@ -32,6 +32,7 @@ async def create_order(order: OrderRequest):
     message["saga_id"] = saga_id
     
     publish_message(TOPIC_START_ORDER_SAGA, message)
+    print("================================================")
     return {"message": "Order processing started", "saga_id": saga_id}
 
 @app.get("/sagas/{saga_id}")

@@ -45,7 +45,7 @@ def process_payment(data):
 # Saga pattern handlers
 def handle_process_payment(data):
     """Handle process payment command from orchestrator"""
-    print("===== PROCESSING PAYMENT (SAGA)")
+    print("===== PROCESSING USER'BALANCE")
     print(data)
     
     saga_id = data.get("saga_id")
@@ -59,7 +59,7 @@ def handle_process_payment(data):
     
     # Check if user exists and has sufficient balance
     if not user or user.balance < amount:
-        # Publish payment failed event
+        # Failed
         publish_kafka(TOPIC_PAYMENT_FAILED, {
             "saga_id": saga_id,
             "order_id": order_id,
@@ -83,7 +83,7 @@ def handle_process_payment(data):
 
 def handle_refund_payment(data):
     """Handle refund payment command from orchestrator (compensation)"""
-    print("===== REFUNDING PAYMENT (SAGA COMPENSATION)")
+    print("===== REFUNDING PAYMENT ")
     print(data)
     
     saga_id = data.get("saga_id")
@@ -120,3 +120,4 @@ def start_listener():
         TOPIC_REFUND_PAYMENT: handle_refund_payment
     }
     consume_kafka(queue_callbacks.keys(), queue_callbacks)
+    print("================================================")

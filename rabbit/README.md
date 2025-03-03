@@ -1,91 +1,68 @@
-# RabbitMQ Microservices Example
+# Microservices with RabbitMQ and Saga Orchestration
 
-A demonstration of microservices architecture using RabbitMQ for communication between services. This project showcases different RabbitMQ message exchange patterns in a e-commerce style application with user, product, and order services.
-
-## Service Ports
-
+## Services
 - User Service: 8000
 - Product Service: 8001
 - Order Service: 8002
-- RabbitMQ: 5672
+- Orchestrator Service: 8003
 
-## Project Structure
+## Architecture
 
-```
-├── docker-compose.yml    # Docker configuration for PostgreSQL and RabbitMQ
-├── user/                 # User microservice
-├── product/              # Product microservice
-└── order/                # Order microservice
-```
+This project demonstrates a microservices architecture using RabbitMQ for message-based communication and the Saga Orchestration pattern for distributed transactions. The orchestrator service coordinates the entire transaction flow and handles compensating transactions in case of failures.
 
-Each microservice follows a similar structure:
-- `main.py` - FastAPI application entry point
-- `routes.py` - API endpoints
-- `models.py` - Database models
-- `schemas.py` - Pydantic schemas for request/response validation
-- `crud.py` - Database operations
-- `database.py` - Database connection setup
-- `rabbitmq.py` - RabbitMQ messaging implementation
-- `mqlistener.py` - RabbitMQ message consumers
+### Saga Orchestration Pattern
 
-## RabbitMQ Messaging Patterns
+The Saga Orchestration pattern is implemented using RabbitMQ Topic Exchange to ensure transaction consistency across microservices. The orchestrator service coordinates the entire transaction flow and handles compensating transactions in case of failures.
 
-This project implements four different RabbitMQ messaging patterns:
+## Transaction Flow
 
-### 1. Default Exchange (Direct Queue)
-- **Implementation**: `publish_default()` and `consume_default()`
-- **Use Case**: Simple point-to-point messaging
-- **Example Queues**:
-  - `order.create` - Create a new order
-  - `order.update` - Update order status
-  - `payment.process` - Process payment
+1. Client sends order request to the Orchestrator
+2. Orchestrator creates a saga and initiates the process:
+   - Creates saga record with status "STARTED"
+   - Sends check_stock command to Product service
 
-### 2. Fanout Exchange
-- **Implementation**: `publish_fanout()` and `consume_fanout()`
-- **Use Case**: Broadcast messages to multiple consumers
-- **Example Exchanges**:
-  - `EX_ORDER` - Order events
-  - `EX_PRODUCT` - Product events
-  - `EX_USER` - User events
+3. Product Service Flow:
+   - Receives check_stock command
+   - Verifies product availability
+   - Sends success/failure event back to orchestrator
 
-### 3. Topic Exchange
-- **Implementation**: `publish_topic()` and `consume_topic()`
-- **Use Case**: Route messages based on patterns
-- **Example Routing Keys**:
-  - `order.create` - Create order events
-  - `user.check` - User verification events
-  - `update.*` - Any update events
+4. User Service Flow (if product available):
+   - Receives check_balance command
+   - Verifies user has sufficient balance
+   - If successful, receives update_balance command
+   - Processes payment and sends result event
 
-### 4. RPC (Remote Procedure Call)
-- **Implementation**: `publish_rpc()` and `consume_rpc()`
-- **Use Case**: Request-response pattern
-- **Example Queues**:
-  - `order_create` - Create order procedure
-  - `product_stock_update` - Update product stock procedure
-  - `order_status_update` - Update order status procedure
-  - `user_check` - Check user balance procedure
+5. Product Service Update (if payment successful):
+   - Receives update_stock command
+   - Updates product quantity
+   - Sends success/failure event
 
-## Order Flow (Current Implementation - RPC)
+6. Order Service Completion:
+   - Receives update_status command
+   - Updates order status to SUCCESS/FAILED
+   - Sends completion event
 
-1. User creates an order via Order Service API
-2. Order Service creates a new order record with status "PROCESSING"
-3. Order Service sends RPC request to Product Service to check stock
-4. Product Service checks if stock is available
-5. If stock is available, Product Service sends RPC request to User Service to check balance
-6. User Service checks if user has sufficient balance
-7. If balance is sufficient, User Service deducts the amount and returns success
-8. Product Service updates stock and sends status update to Order Service
-9. Order Service updates the order status to "SUCCESS" or "FAILED"
+## Compensation Flow (Rollback)
 
-## Installation and Setup
+If any step fails, the orchestrator initiates compensating transactions:
 
-1. Start the infrastructure:
-```
+1. If product check fails:
+   - Update order status to FAILED
+
+2. If payment fails:
+   - Update order status to FAILED
+
+3. If stock update fails:
+   - Refund payment to user
+   - Update order status to FAILED
+
+## Running the Application
+
+```bash
+# Start RabbitMQ and PostgreSQL
 docker-compose up -d
-```
 
-2. Start each microservice (in separate terminals):
-```
+# Start services (in separate terminals)
 cd user
 python main.py
 
@@ -94,13 +71,71 @@ python main.py
 
 cd order
 python main.py
+
+cd orchestrator
+python main.py
 ```
+
+## API Endpoints
+
+### Orchestrator Service (8003)
+- POST /orders - Create a new order and start the saga
+  ```json
+  {
+    "product_id": 1,
+    "owner_id": 1,
+    "quantity": 2
+  }
+  ```
+- GET /sagas/{saga_id} - Get saga status
+- GET /sagas/order/{order_id} - Get saga by order ID
+- GET /sagas - List all sagas
+
+### Order Service (8002)
+- GET /orders - Get all orders
+- GET /orders/{order_id} - Get order by ID
+- POST /orders - Create order
+- DELETE /orders/{order_id} - Delete order
+
+### Product Service (8001)
+- GET /products - Get all products
+- GET /products/{product_id} - Get product by ID
+- POST /products - Create product
+- PUT /products/{product_id} - Update product
+- DELETE /products/{product_id} - Delete product
+
+### User Service (8000)
+- GET /users - Get all users
+- GET /users/{user_id} - Get user by ID
+- POST /users - Create user
+- PUT /users/{user_id} - Update user
+- DELETE /users/{user_id} - Delete user
+
+## Message Flow
+
+### Topic Exchange Patterns
+- Commands: `saga.{sagaId}.command.{service}.{action}`
+- Events: `saga.{sagaId}.event.{service}.{action}.{result}`
+
+### Example Message Flow
+1. Command: `saga.123.command.product.check_stock`
+2. Event: `saga.123.event.product.check_stock.success`
+3. Command: `saga.123.command.user.check_balance`
+4. Event: `saga.123.event.user.check_balance.success`
+5. Command: `saga.123.command.user.update_balance`
+6. Event: `saga.123.event.user.update_balance.success`
+7. Command: `saga.123.command.product.update_stock`
+8. Event: `saga.123.event.product.update_stock.success`
+9. Command: `saga.123.command.order.update_status`
+10. Event: `saga.123.event.order.update_status.success`
 
 ## Dependencies
 
-Each service requires:
 - FastAPI
 - SQLAlchemy
 - Pydantic
-- pika (RabbitMQ client)
-- PostgreSQL database
+- RabbitMQ (pika)
+- PostgreSQL
+- Python-dotenv
+
+## Project Structure

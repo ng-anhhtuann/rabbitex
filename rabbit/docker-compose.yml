@@ -22,6 +22,19 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      
+  orchestrator:
+    build: ./orchestrator
+    container_name: orchestrator
+    ports:
+      - "8003:8003"
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      - DATABASE_URL=postgresql://use:pwd@db/orchestrator
+      - RABBITMQ_HOST=rabbitmq
+      - PORT=8003
 
 volumes:
   pgdata:

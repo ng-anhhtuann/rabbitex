@@ -39,7 +39,6 @@ class OrderSagaOrchestrator:
         
     def start(self):
         """Start the orchestrator"""
-        print("Starting Order Saga Orchestrator...")
         
         # Start command listener
         command_callbacks = {
@@ -76,7 +75,7 @@ class OrderSagaOrchestrator:
     # Command handlers
     def handle_start_order_saga(self, data):
         """Handle start order saga command from API"""
-        print(f"Received start order saga command: {data}")
+        print(f"===== START ORDER: {data}")
         
         # Create new saga
         saga_id = data.get("saga_id", None)
@@ -95,8 +94,8 @@ class OrderSagaOrchestrator:
     
     # Event handlers
     def handle_order_created(self, data):
-        """Handle order created event"""
-        print(f"Received order created event: {data}")
+        """Handle order created """
+        print(f"===== ORDER CREATED : {data}")
         saga_id = data.get("saga_id")
         
         if saga_id not in saga_store:
@@ -118,7 +117,7 @@ class OrderSagaOrchestrator:
     
     def handle_product_reserved(self, data):
         """Handle product reserved event"""
-        print(f"Received product reserved event: {data}")
+        print(f"===== CHECK PRODUCT'STOCK: {data}")
         saga_id = data.get("saga_id")
         
         if saga_id not in saga_store:
@@ -140,7 +139,7 @@ class OrderSagaOrchestrator:
     
     def handle_product_reservation_failed(self, data):
         """Handle product reservation failed event"""
-        print(f"Received product reservation failed event: {data}")
+        print(f"===== PRODUCT OUT OF STOCK: {data}")
         saga_id = data.get("saga_id")
         
         if saga_id not in saga_store:
@@ -159,7 +158,7 @@ class OrderSagaOrchestrator:
     
     def handle_payment_processed(self, data):
         """Handle payment processed event"""
-        print(f"Received payment processed event: {data}")
+        print(f"===== USER BALANCE CHECK: {data}")
         saga_id = data.get("saga_id")
         
         if saga_id not in saga_store:
@@ -187,7 +186,7 @@ class OrderSagaOrchestrator:
     
     def handle_payment_failed(self, data):
         """Handle payment failed event"""
-        print(f"Received payment failed event: {data}")
+        print(f"===== BALANCE INSUFFICIENT: {data}")
         saga_id = data.get("saga_id")
         
         if saga_id not in saga_store:
@@ -217,7 +216,7 @@ class OrderSagaOrchestrator:
     
     def handle_order_completed(self, data):
         """Handle order completed event"""
-        print(f"Received order completed event: {data}")
+        print(f"===== ORDER SUCCESS: {data}")
         saga_id = data.get("saga_id")
         
         if saga_id not in saga_store:
@@ -232,7 +231,7 @@ class OrderSagaOrchestrator:
     
     def handle_order_cancelled(self, data):
         """Handle order cancelled event"""
-        print(f"Received order cancelled event: {data}")
+        print(f"===== ORDER FAILED: {data}")
         saga_id = data.get("saga_id")
         
         if saga_id not in saga_store:

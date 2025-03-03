@@ -70,10 +70,10 @@ def update_stock(data):
         
     db.close()
 
-# Saga pattern handlers
+# SAGA ORTCHESTRATION PATTERN
 def handle_reserve_product(data):
     """Handle reserve product command from orchestrator"""
-    print("===== RESERVING PRODUCT (SAGA)")
+    print("===== CHECKING PRODUCT'STOCK")
     print(data)
     
     saga_id = data.get("saga_id")
@@ -137,12 +137,12 @@ def handle_confirm_product_deduction(data):
     product = db.query(models.Product).filter(models.Product.id == product_id).first()
     
     if product:
-        # Actually deduct the stock now that payment is confirmed
+        # Deduct the stock now that payment is confirmed
         product.stock -= quantity
         db.commit()
         print(f"Stock deducted: Product {product_id} new stock: {product.stock}")
     else:
-        print(f"Warning: Product {product_id} not found for stock deduction")
+        print(f"Product {product_id} not found")
     
     db.close()
 
@@ -157,3 +157,4 @@ def start_listener():
         TOPIC_CONFIRM_PRODUCT_DEDUCTION: handle_confirm_product_deduction
     }
     consume_kafka(queue_callbacks.keys(), queue_callbacks)
+    print("================================================")

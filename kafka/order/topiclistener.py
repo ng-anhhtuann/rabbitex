@@ -42,7 +42,7 @@ def update_order_status(data):
     db.close()
     return order_data
 
-# Saga pattern handlers
+# SAGA ORCHESTRATION PATTERN
 def handle_create_order(data):
     """Handle create order command from orchestrator"""
     print("===== CREATING ORDER (SAGA)")
@@ -115,13 +115,13 @@ def handle_cancel_order(data):
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     
     if order:
-        order.status = "CANCELLED"
+        order.status = "FAILED"
         db.commit()
         
         publish_kafka(TOPIC_ORDER_CANCELLED, {
             "saga_id": saga_id,
             "order_id": order_id,
-            "status": "CANCELLED"
+            "status": "FAILED"
         })
     
     db.close()
@@ -137,3 +137,4 @@ def start_listener():
         TOPIC_CANCEL_ORDER: handle_cancel_order
     }
     consume_kafka(queue_callbacks.keys(), queue_callbacks)
+    print("================================================")

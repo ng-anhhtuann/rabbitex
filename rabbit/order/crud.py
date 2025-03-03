@@ -12,7 +12,10 @@ from rabbitmq import publish_default, publish_fanout, publish_topic, publish_rpc
 # TOPIC_ORDER = "order.create.#"
 
 # @RPC
-QUEUE_CREATE = "order_create"
+# QUEUE_CREATE = "order_create"
+
+# New Orchestrator Queue
+QUEUE_ORCHESTRATE_ORDER = "orchestrate_order"
 
 def get_orders(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.Order).offset(skip).limit(limit).all()
@@ -41,7 +44,11 @@ def create_order(db: Session, order: schemas.OrderCreate):
     # publish_topic(TOPIC_ORDER, message)
     # return db_order
     
-    response = publish_rpc(QUEUE_CREATE, message)
+    # Old direct RPC to product service
+    # response = publish_rpc(QUEUE_CREATE, message)
+    
+    # New RPC to orchestrator service
+    response = publish_rpc(QUEUE_ORCHESTRATE_ORDER, message)
     print("DATA RESPONSE")
     print(response)
 
